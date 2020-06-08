@@ -1,17 +1,13 @@
-import * as AWS from "aws-sdk";
-import * as AWSXRay from "aws-xray-sdk";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-
 import { Podcast } from "../models/Podcast";
 import { PodcastUpdate } from "../models/PodcastUpdate";
-
-const XAWS = AWSXRay.captureAWS(AWS);
+import { createDynamoDBClient } from "./utils";
 
 export class PodcastsAccess {
   constructor(
     private readonly docClient: DocumentClient = createDynamoDBClient(),
-    private readonly podcastsTable = process.env.PODCASTS_TABLE || "",
-    private readonly podcastIdIndex = process.env.PODCAST_ID_INDEX || ""
+    private readonly podcastsTable: string = process.env.PODCASTS_TABLE || "",
+    private readonly podcastIdIndex: string = process.env.PODCAST_ID_INDEX || ""
   ) {}
 
   async getAllPodcasts(userId: string): Promise<Podcast[]> {
@@ -105,16 +101,4 @@ export class PodcastsAccess {
       })
       .promise();
   }
-}
-
-function createDynamoDBClient() {
-  if (process.env.IS_OFFLINE) {
-    console.log("Creating a local DynamoDB instance");
-    return new XAWS.DynamoDB.DocumentClient({
-      region: "localhost",
-      endpoint: "http://localhost:8000",
-    });
-  }
-
-  return new XAWS.DynamoDB.DocumentClient();
 }

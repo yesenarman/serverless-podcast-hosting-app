@@ -16,7 +16,7 @@ const logger = createLogger("getPodcasts");
 const getPodcastsHandler: APIGatewayProxyHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  logger.info("Caller event", event);
+  logger.info("Caller event", { event });
 
   const userId = getUserId(event);
   const items: Podcast[] = await getAllPodcasts(userId);

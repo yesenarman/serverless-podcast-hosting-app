@@ -17,7 +17,7 @@ const logger = createLogger("updatePodcast");
 const updatePodcastHandler: APIGatewayProxyHandler = async function (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> {
-  logger.info("Caller event", event);
+  logger.info("Caller event", { event });
 
   const userId = getUserId(event);
   const podcastId = event.pathParameters?.podcastId;

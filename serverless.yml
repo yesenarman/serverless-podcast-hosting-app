@@ -19,15 +19,26 @@ provider:
   apiGateway:
     minimumCompressionSize: 1024 # Enable gzip compression for responses > 1 KB
 
-  tracing:
-    lambda: true
-    apiGateway: true
-
   environment:
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
     JWKS_URL: https://dev-rjulv14u.auth0.com/.well-known/jwks.json
     PODCASTS_TABLE: Podcasts-${self:provider.stage}
     PODCAST_ID_INDEX: PodcastIdIndex
+    EPISODES_TABLE: Episodes-${self:provider.stage}
+    EPISODE_CREATED_AT_INDEX: EpisodeCreatedAtIndex
+
+  tracing:
+    lambda: true
+    apiGateway: true
+
+  # NOTE: This are common permissions, shared by all lambda functions.
+  # Other permissions are defined per function.
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - xray:PutTelemetryRecords
+        - xray:PutTraceSegments
+      Resource: "*"
 
 functions:
   Auth:
@@ -41,6 +52,7 @@ functions:
           path: podcasts
           cors: true
           authorizer: Auth
+    iamRoleStatementsInherit: true
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -58,6 +70,7 @@ functions:
           request:
             schema:
               application/json: ${file(schemas/create-podcast-request.json)}
+    iamRoleStatementsInherit: true
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -75,6 +88,7 @@ functions:
           request:
             schema:
               application/json: ${file(schemas/update-podcast-request.json)}
+    iamRoleStatementsInherit: true
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -93,6 +107,7 @@ functions:
           path: podcasts/{podcastId}
           cors: true
           authorizer: Auth
+    iamRoleStatementsInherit: true
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -102,6 +117,89 @@ functions:
         Action:
           - dynamodb:Query
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}/index/${self:provider.environment.PODCAST_ID_INDEX}
+
+  GetEpisodes:
+    handler: src/lambda/http/getEpisodes.handler
+    events:
+      - http:
+          method: get
+          path: podcasts/{podcastId}/episodes
+          cors: true
+          authorizer: Auth
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}/index/${self:provider.environment.PODCAST_ID_INDEX}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EPISODES_TABLE}/index/${self:provider.environment.EPISODE_CREATED_AT_INDEX}
+
+  CreateEpisode:
+    handler: src/lambda/http/createEpisode.handler
+    events:
+      - http:
+          method: post
+          path: podcasts/{podcastId}/episodes
+          cors: true
+          authorizer: Auth
+          request:
+            schema:
+              application/json: ${file(schemas/create-episode-request.json)}
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}/index/${self:provider.environment.PODCAST_ID_INDEX}
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EPISODES_TABLE}
+
+  UpdateEpisode:
+    handler: src/lambda/http/updateEpisode.handler
+    events:
+      - http:
+          method: patch
+          path: podcasts/{podcastId}/episodes/{episodeId}
+          cors: true
+          authorizer: Auth
+          request:
+            schema:
+              application/json: ${file(schemas/update-episode-request.json)}
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}/index/${self:provider.environment.PODCAST_ID_INDEX}
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EPISODES_TABLE}
+
+  DeleteEpisode:
+    handler: src/lambda/http/deleteEpisode.handler
+    events:
+      - http:
+          method: delete
+          path: podcasts/{podcastId}/episodes/{episodeId}
+          cors: true
+          authorizer: Auth
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}/index/${self:provider.environment.PODCAST_ID_INDEX}
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EPISODES_TABLE}
 
 resources:
   Resources:
@@ -130,6 +228,36 @@ resources:
             KeySchema:
               - AttributeName: podcastId
                 KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+    EpisodesDynamoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.EPISODES_TABLE}
+        BillingMode: PAY_PER_REQUEST
+
+        AttributeDefinitions:
+          - AttributeName: podcastId
+            AttributeType: S
+          - AttributeName: episodeId
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+
+        KeySchema:
+          - AttributeName: podcastId
+            KeyType: HASH
+          - AttributeName: episodeId
+            KeyType: RANGE
+
+        LocalSecondaryIndexes:
+          - IndexName: ${self:provider.environment.EPISODE_CREATED_AT_INDEX}
+            KeySchema:
+              - AttributeName: podcastId
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
             Projection:
               ProjectionType: ALL
 

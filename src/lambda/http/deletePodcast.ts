@@ -16,7 +16,7 @@ const logger = createLogger("deletePodcast");
 export const deletePodcastHandler: APIGatewayProxyHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  logger.info("Caller event", event);
+  logger.info("Caller event", { event });
 
   const userId = getUserId(event);
   const podcastId = event.pathParameters?.podcastId;
