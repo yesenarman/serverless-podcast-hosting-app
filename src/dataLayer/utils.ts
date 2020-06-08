@@ -14,3 +14,7 @@ export function createDynamoDBClient() {
 
   return new XAWS.DynamoDB.DocumentClient();
 }
+
+export function createS3Client() {
+  return new XAWS.S3({ signatureVersion: "v4" });
+}

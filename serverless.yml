@@ -26,6 +26,9 @@ provider:
     PODCAST_CREATED_AT_INDEX: PodcastCreatedAtIndex
     EPISODES_TABLE: Episodes-${self:provider.stage}
     EPISODE_CREATED_AT_INDEX: EpisodeCreatedAtIndex
+    IMAGES_S3_BUCKET: podcast-hosting-app-images-arman-${self:provider.stage}
+    UPLOAD_URL_EXPIRATION: 300
+    DOWNLOAD_URL_EXPIRATION: 604800
 
   tracing:
     lambda: true
@@ -63,6 +66,11 @@ functions:
         Action:
           - dynamodb:Query
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}/index/${self:provider.environment.PODCAST_CREATED_AT_INDEX}
+      - Effect: Allow
+        Action:
+          - s3:HeadObject
+          - s3:GetObject
+        Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*
 
   CreatePodcast:
     handler: src/lambda/http/createPodcast.handler
@@ -116,6 +124,26 @@ functions:
           - dynamodb:GetItem
           - dynamodb:DeleteItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}
+
+  GenerateCoverImageUploadUrl:
+    handler: src/lambda/http/generateCoverImageUploadUrl.handler
+    events:
+      - http:
+          method: post
+          path: podcasts/{podcastId}/coverimage
+          cors: true
+          authorizer: Auth
+    iamRoleStatementsName: coverImageUpload
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+        Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*
 
   GetEpisodes:
     handler: src/lambda/http/getEpisodes.handler
@@ -272,3 +300,21 @@ resources:
         ResponseType: DEFAULT_4XX
         RestApiId:
           Ref: ApiGatewayRestApi
+
+    ImagesS3Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.IMAGES_S3_BUCKET}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedOrigins:
+                - "*"
+              AllowedHeaders:
+                - "*"
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              MaxAge: 3000
