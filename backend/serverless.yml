@@ -239,7 +239,7 @@ functions:
     events:
       - http:
           method: post
-          path: podcasts/{podcastId}/episode/{episodeId}/audio
+          path: podcasts/{podcastId}/episodes/{episodeId}/audio
           cors: true
           authorizer: Auth
     iamRoleStatementsName: audioUpload
