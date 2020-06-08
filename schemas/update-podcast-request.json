@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Update Podcast Request",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "hostName": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "isPublic": {
+      "type": "boolean"
+    }
+  },
+  "required": ["name", "hostName", "description", "isPublic"],
+  "additionalProperties": false
+}

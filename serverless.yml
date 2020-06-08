@@ -8,25 +8,138 @@ custom:
 
 plugins:
   - serverless-webpack
+  - serverless-iam-roles-per-function
 
 provider:
   name: aws
   runtime: nodejs12.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+
   apiGateway:
     minimumCompressionSize: 1024 # Enable gzip compression for responses > 1 KB
+
+  tracing:
+    lambda: true
+    apiGateway: true
+
   environment:
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
     JWKS_URL: https://dev-rjulv14u.auth0.com/.well-known/jwks.json
+    PODCASTS_TABLE: Podcasts-${self:provider.stage}
+    PODCAST_ID_INDEX: PodcastIdIndex
 
 functions:
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
 
-  hello:
-    handler: handler.hello
+  GetPodcasts:
+    handler: src/lambda/http/getPodcasts.handler
     events:
       - http:
           method: get
-          path: hello
+          path: podcasts
           cors: true
           authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}
+
+  CreatePodcast:
+    handler: src/lambda/http/createPodcast.handler
+    events:
+      - http:
+          method: post
+          path: podcasts
+          cors: true
+          authorizer: Auth
+          request:
+            schema:
+              application/json: ${file(schemas/create-podcast-request.json)}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}
+
+  UpdatePodcast:
+    handler: src/lambda/http/updatePodcast.handler
+    events:
+      - http:
+          method: patch
+          path: podcasts/{podcastId}
+          cors: true
+          authorizer: Auth
+          request:
+            schema:
+              application/json: ${file(schemas/update-podcast-request.json)}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}/index/${self:provider.environment.PODCAST_ID_INDEX}
+
+  DeletePodcast:
+    handler: src/lambda/http/deletePodcast.handler
+    events:
+      - http:
+          method: delete
+          path: podcasts/{podcastId}
+          cors: true
+          authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}/index/${self:provider.environment.PODCAST_ID_INDEX}
+
+resources:
+  Resources:
+    PodcastsDynamoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.PODCASTS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+          - AttributeName: podcastId
+            AttributeType: S
+
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+          - AttributeName: createdAt
+            KeyType: RANGE
+
+        GlobalSecondaryIndexes:
+          - IndexName: ${self:provider.environment.PODCAST_ID_INDEX}
+            KeySchema:
+              - AttributeName: podcastId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+    GatewayResponseDefault4XX:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS,POST,PATCH,DELETE'"
+        ResponseType: DEFAULT_4XX
+        RestApiId:
+          Ref: ApiGatewayRestApi

@@ -7,18 +7,24 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "aws-xray-sdk": "^3.0.1",
     "axios": "^0.19.2",
     "jsonwebtoken": "^8.5.1",
+    "middy": "^0.36.0",
     "source-map-support": "^0.5.19",
+    "uuid": "^8.1.0",
     "winston": "^3.2.1"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.53",
     "@types/jsonwebtoken": "^8.5.0",
     "@types/node": "^12.12.44",
+    "@types/uuid": "^8.0.0",
+    "aws-sdk": "^2.691.0",
     "cache-loader": "^4.1.0",
     "eslint": "^7.2.0",
     "fork-ts-checker-webpack-plugin": "^4.1.6",
+    "serverless-iam-roles-per-function": "^2.0.2",
     "serverless-webpack": "^5.3.2",
     "ts-loader": "^7.0.5",
     "typescript": "^3.9.5",
