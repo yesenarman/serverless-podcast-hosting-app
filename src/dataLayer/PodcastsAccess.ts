@@ -7,13 +7,15 @@ export class PodcastsAccess {
   constructor(
     private readonly docClient: DocumentClient = createDynamoDBClient(),
     private readonly podcastsTable: string = process.env.PODCASTS_TABLE || "",
-    private readonly podcastIdIndex: string = process.env.PODCAST_ID_INDEX || ""
+    private readonly podcastCreatedAtIndex: string = process.env
+      .PODCAST_CREATED_AT_INDEX || ""
   ) {}
 
   async getAllPodcasts(userId: string): Promise<Podcast[]> {
     const result = await this.docClient
       .query({
         TableName: this.podcastsTable,
+        IndexName: this.podcastCreatedAtIndex,
         KeyConditionExpression: "userId = :userId",
         ExpressionAttributeValues: {
           ":userId": userId,
@@ -24,23 +26,22 @@ export class PodcastsAccess {
     return result.Items as Podcast[];
   }
 
-  async findPodcastById(podcastId: string): Promise<Podcast | null> {
+  async findPodcastByKey(
+    userId: string,
+    podcastId: string
+  ): Promise<Podcast | null> {
     const result = await this.docClient
-      .query({
+      .get({
         TableName: this.podcastsTable,
-        IndexName: this.podcastIdIndex,
-        KeyConditionExpression: "podcastId = :podcastId",
-        ExpressionAttributeValues: {
-          ":podcastId": podcastId,
-        },
+        Key: { userId, podcastId },
       })
       .promise();
 
-    if (result.Count === 0 || !result.Items) {
+    if (!result.Item) {
       return null;
     }
 
-    return result.Items[0] as Podcast;
+    return result.Item as Podcast;
   }
 
   async createPodcast(podcast: Podcast): Promise<Podcast> {
@@ -58,18 +59,11 @@ export class PodcastsAccess {
     userId: string,
     podcastId: string,
     update: PodcastUpdate
-  ): Promise<boolean> {
-    const podcast = await this.findPodcastById(podcastId);
-    if (!podcast) {
-      return false;
-    }
-
-    const createdAt = podcast.createdAt;
-
+  ): Promise<void> {
     await this.docClient
       .update({
         TableName: this.podcastsTable,
-        Key: { userId, createdAt },
+        Key: { userId, podcastId },
         UpdateExpression:
           "set #podcastName = :podcastName, hostName = :hostName, description = :description, isPublic = :isPublic",
         ExpressionAttributeValues: {
@@ -83,21 +77,13 @@ export class PodcastsAccess {
         },
       })
       .promise();
-
-    return true;
   }
 
   async deletePodcast(userId: string, podcastId: string): Promise<void> {
-    const podcast = await this.findPodcastById(podcastId);
-    if (!podcast) {
-      return;
-    }
-
-    const createdAt = podcast.createdAt;
     await this.docClient
       .delete({
         TableName: this.podcastsTable,
-        Key: { userId, createdAt },
+        Key: { userId, podcastId },
       })
       .promise();
   }

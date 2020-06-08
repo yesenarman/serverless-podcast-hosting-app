@@ -4,11 +4,7 @@ import { PodcastsAccess } from "../../dataLayer/PodcastsAccess";
 import { EpisodesAccess } from "../../dataLayer/EpisodesAccess";
 import { CreateEpisodeRequest } from "../../requests/CreateEpisodeRequest";
 import { UpdateEpisodeRequest } from "../../requests/UpdateEpisodeRequest";
-import {
-  ActionForbiddenError,
-  EpisodeNotFoundError,
-  PodcastNotFoundError,
-} from "../errors";
+import { EpisodeNotFoundError, PodcastNotFoundError } from "../errors";
 
 export class EpisodesService {
   constructor(
@@ -16,18 +12,14 @@ export class EpisodesService {
     private readonly episodesAccess: EpisodesAccess
   ) {}
 
-  async getAllEpisodes(
-    userId: string | null,
-    podcastId: string
-  ): Promise<Episode[]> {
-    const podcast = await this.podcastsAccess.findPodcastById(podcastId);
+  async getAllEpisodes(userId: string, podcastId: string): Promise<Episode[]> {
+    const podcast = await this.podcastsAccess.findPodcastByKey(
+      userId,
+      podcastId
+    );
 
     if (!podcast) {
       throw new PodcastNotFoundError();
-    }
-
-    if (!podcast.isPublic && podcast.userId !== userId) {
-      throw new ActionForbiddenError();
     }
 
     return await this.episodesAccess.getAllEpisodes(podcastId);
@@ -38,14 +30,13 @@ export class EpisodesService {
     podcastId: string,
     createEpisodeRequest: CreateEpisodeRequest
   ): Promise<Episode> {
-    const podcast = await this.podcastsAccess.findPodcastById(podcastId);
+    const podcast = await this.podcastsAccess.findPodcastByKey(
+      userId,
+      podcastId
+    );
 
     if (!podcast) {
       throw new PodcastNotFoundError();
-    }
-
-    if (podcast.userId !== userId) {
-      throw new ActionForbiddenError();
     }
 
     return await this.episodesAccess.createEpisode({
@@ -62,17 +53,16 @@ export class EpisodesService {
     episodeId: string,
     updateEpisodeRequest: UpdateEpisodeRequest
   ): Promise<void> {
-    const podcast = await this.podcastsAccess.findPodcastById(podcastId);
+    const podcast = await this.podcastsAccess.findPodcastByKey(
+      userId,
+      podcastId
+    );
 
     if (!podcast) {
       throw new PodcastNotFoundError();
     }
 
-    if (podcast.userId !== userId) {
-      throw new ActionForbiddenError();
-    }
-
-    const episode = await this.episodesAccess.findEpisodeById(
+    const episode = await this.episodesAccess.findEpisodeByKey(
       podcastId,
       episodeId
     );
@@ -93,14 +83,13 @@ export class EpisodesService {
     podcastId: string,
     episodeId: string
   ): Promise<void> {
-    const podcast = await this.podcastsAccess.findPodcastById(podcastId);
+    const podcast = await this.podcastsAccess.findPodcastByKey(
+      userId,
+      podcastId
+    );
 
     if (!podcast) {
       throw new PodcastNotFoundError();
-    }
-
-    if (podcast.userId !== userId) {
-      throw new ActionForbiddenError();
     }
 
     await this.episodesAccess.deleteEpisode(podcastId, episodeId);

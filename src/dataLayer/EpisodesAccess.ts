@@ -27,7 +27,7 @@ export class EpisodesAccess {
     return result.Items as Episode[];
   }
 
-  async findEpisodeById(
+  async findEpisodeByKey(
     podcastId: string,
     episodeId: string
   ): Promise<Episode | null> {

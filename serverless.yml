@@ -1,5 +1,5 @@
 service:
-  name: podcast-hosting-app
+  name: serverless-podcast-hosting-app
 
 custom:
   webpack:
@@ -23,7 +23,7 @@ provider:
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
     JWKS_URL: https://dev-rjulv14u.auth0.com/.well-known/jwks.json
     PODCASTS_TABLE: Podcasts-${self:provider.stage}
-    PODCAST_ID_INDEX: PodcastIdIndex
+    PODCAST_CREATED_AT_INDEX: PodcastCreatedAtIndex
     EPISODES_TABLE: Episodes-${self:provider.stage}
     EPISODE_CREATED_AT_INDEX: EpisodeCreatedAtIndex
 
@@ -31,13 +31,18 @@ provider:
     lambda: true
     apiGateway: true
 
-  # NOTE: This are common permissions, shared by all lambda functions.
-  # Other permissions are defined per function.
   iamRoleStatements:
-    - Effect: "Allow"
+    - Effect: Allow
       Action:
         - xray:PutTelemetryRecords
         - xray:PutTraceSegments
+      Resource: "*"
+
+    # Fix issue with missing CreateLogGroup permission when
+    # using serverless-iam-roles-per-function
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
       Resource: "*"
 
 functions:
@@ -57,7 +62,7 @@ functions:
       - Effect: Allow
         Action:
           - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}/index/${self:provider.environment.PODCAST_CREATED_AT_INDEX}
 
   CreatePodcast:
     handler: src/lambda/http/createPodcast.handler
@@ -92,12 +97,9 @@ functions:
     iamRoleStatements:
       - Effect: Allow
         Action:
+          - dynamodb:GetItem
           - dynamodb:UpdateItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}
-      - Effect: Allow
-        Action:
-          - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}/index/${self:provider.environment.PODCAST_ID_INDEX}
 
   DeletePodcast:
     handler: src/lambda/http/deletePodcast.handler
@@ -111,12 +113,9 @@ functions:
     iamRoleStatements:
       - Effect: Allow
         Action:
+          - dynamodb:GetItem
           - dynamodb:DeleteItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}
-      - Effect: Allow
-        Action:
-          - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}/index/${self:provider.environment.PODCAST_ID_INDEX}
 
   GetEpisodes:
     handler: src/lambda/http/getEpisodes.handler
@@ -130,8 +129,8 @@ functions:
     iamRoleStatements:
       - Effect: Allow
         Action:
-          - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}/index/${self:provider.environment.PODCAST_ID_INDEX}
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}
       - Effect: Allow
         Action:
           - dynamodb:Query
@@ -152,8 +151,8 @@ functions:
     iamRoleStatements:
       - Effect: Allow
         Action:
-          - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}/index/${self:provider.environment.PODCAST_ID_INDEX}
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}
       - Effect: Allow
         Action:
           - dynamodb:PutItem
@@ -174,8 +173,8 @@ functions:
     iamRoleStatements:
       - Effect: Allow
         Action:
-          - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}/index/${self:provider.environment.PODCAST_ID_INDEX}
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}
       - Effect: Allow
         Action:
           - dynamodb:GetItem
@@ -194,8 +193,8 @@ functions:
     iamRoleStatements:
       - Effect: Allow
         Action:
-          - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}/index/${self:provider.environment.PODCAST_ID_INDEX}
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}
       - Effect: Allow
         Action:
           - dynamodb:DeleteItem
@@ -212,22 +211,24 @@ resources:
         AttributeDefinitions:
           - AttributeName: userId
             AttributeType: S
-          - AttributeName: createdAt
-            AttributeType: S
           - AttributeName: podcastId
+            AttributeType: S
+          - AttributeName: createdAt
             AttributeType: S
 
         KeySchema:
           - AttributeName: userId
             KeyType: HASH
-          - AttributeName: createdAt
+          - AttributeName: podcastId
             KeyType: RANGE
 
-        GlobalSecondaryIndexes:
-          - IndexName: ${self:provider.environment.PODCAST_ID_INDEX}
+        LocalSecondaryIndexes:
+          - IndexName: ${self:provider.environment.PODCAST_CREATED_AT_INDEX}
             KeySchema:
-              - AttributeName: podcastId
+              - AttributeName: userId
                 KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
             Projection:
               ProjectionType: ALL
 

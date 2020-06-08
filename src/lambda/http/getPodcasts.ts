@@ -6,9 +6,8 @@ import {
 } from "aws-lambda";
 import * as middy from "middy";
 import { cors } from "middy/middlewares";
-import { Podcast } from "../../models/Podcast";
-import { getAllPodcasts } from "../../businessLogic/podcasts";
-import { getUserId } from "../utils";
+import { podcastsService } from "../../businessLogic";
+import { getUserId, mapErrorToAPIGatewayResponse } from "../utils";
 import { createLogger } from "../../utils/logger";
 
 const logger = createLogger("getPodcasts");
@@ -19,14 +18,20 @@ const getPodcastsHandler: APIGatewayProxyHandler = async (
   logger.info("Caller event", { event });
 
   const userId = getUserId(event);
-  const items: Podcast[] = await getAllPodcasts(userId);
 
-  logger.info("Podcasts fetched", { userId, count: items.length });
+  try {
+    const items = await podcastsService.getAllPodcasts(userId);
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ items }),
-  };
+    logger.info("Podcasts were fetched", { userId, count: items.length });
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ items }),
+    };
+  } catch (error) {
+    logger.error("Podcasts fetch failed", { error });
+    return mapErrorToAPIGatewayResponse(error);
+  }
 };
 
 export const handler = middy(getPodcastsHandler).use(

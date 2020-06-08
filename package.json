@@ -1,5 +1,5 @@
 {
-  "name": "podcast-hosting-app",
+  "name": "serverless-podcast-hosting-app",
   "version": "1.0.0",
   "description": "Serverless webpack example using Typescript",
   "main": "handler.js",

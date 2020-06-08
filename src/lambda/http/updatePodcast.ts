@@ -8,8 +8,8 @@ import {
 import * as middy from "middy";
 import { cors } from "middy/middlewares";
 import { UpdatePodcastRequest } from "../../requests/UpdatePodcastRequest";
-import { updatePodcast } from "../../businessLogic/podcasts";
-import { getUserId } from "../utils";
+import { podcastsService } from "../../businessLogic";
+import { getUserId, mapErrorToAPIGatewayResponse } from "../utils";
 import { createLogger } from "../../utils/logger";
 
 const logger = createLogger("updatePodcast");
@@ -32,23 +32,23 @@ const updatePodcastHandler: APIGatewayProxyHandler = async function (
     };
   }
 
-  const updated = await updatePodcast(userId, podcastId, updatePodcastRequest);
-  if (!updated) {
-    logger.info("Podcast does not exist", { userId, podcastId });
+  try {
+    await podcastsService.updatePodcast(
+      userId,
+      podcastId,
+      updatePodcastRequest
+    );
+
+    logger.info("Podcast was updated", { userId, podcastId });
+
     return {
-      statusCode: 404,
-      body: JSON.stringify({
-        error: "Podcast does not exist",
-      }),
+      statusCode: 200,
+      body: "",
     };
+  } catch (error) {
+    logger.error("Podcast update failed", { error });
+    return mapErrorToAPIGatewayResponse(error);
   }
-
-  logger.info("Podcast was updated", { userId, podcastId });
-
-  return {
-    statusCode: 200,
-    body: "",
-  };
 };
 
 export const handler = middy(updatePodcastHandler).use(
