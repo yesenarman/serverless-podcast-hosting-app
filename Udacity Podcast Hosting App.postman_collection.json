@@ -1,0 +1,566 @@
+{
+	"info": {
+		"_postman_id": "927730a8-0791-4903-92be-64c4aa57aca8",
+		"name": "Udacity Podcast Hosting App",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Podcasts",
+			"item": [
+				{
+					"name": "Get all podcasts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "3343ac69-1480-4479-8b00-3d8551484f83",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Body includes items array\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.items).to.be.an(\"array\");",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://{{apiId}}.execute-api.us-east-1.amazonaws.com/dev/podcasts",
+							"protocol": "https",
+							"host": [
+								"{{apiId}}",
+								"execute-api",
+								"us-east-1",
+								"amazonaws",
+								"com"
+							],
+							"path": [
+								"dev",
+								"podcasts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create podcast",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "2d82387a-e055-481e-8d0b-cf8849dc25a9",
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Body includes item\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var item = jsonData.item;",
+									"    pm.expect(item.userId).to.not.eql(null);",
+									"    pm.expect(item.podcastId).to.not.eql(null);",
+									"    pm.expect(item.createdAt).to.not.eql(null);",
+									"    pm.expect(item.name).to.not.eql(null);",
+									"    pm.expect(item.hostName).to.not.eql(null);",
+									"    pm.expect(item.description).to.not.eql(null);",
+									"    pm.expect(item.isPublic).to.eql(false);",
+									"",
+									"    pm.environment.set(\"podcastId\", jsonData.item.podcastId);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"name\": \"Hello Podcast\",\n\t\"hostName\": \"John Doe\",\n\t\"description\": \"A cool podcast about something\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{apiId}}.execute-api.us-east-1.amazonaws.com/dev/podcasts",
+							"protocol": "https",
+							"host": [
+								"{{apiId}}",
+								"execute-api",
+								"us-east-1",
+								"amazonaws",
+								"com"
+							],
+							"path": [
+								"dev",
+								"podcasts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update podcast",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "25c07467-4935-47a3-93a7-7bb48591a561",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"name\": \"Hello Podcast\",\n\t\"hostName\": \"John Doe\",\n\t\"description\": \"A cool podcast about something\",\n\t\"isPublic\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{apiId}}.execute-api.us-east-1.amazonaws.com/dev/podcasts/{{podcastId}}",
+							"protocol": "https",
+							"host": [
+								"{{apiId}}",
+								"execute-api",
+								"us-east-1",
+								"amazonaws",
+								"com"
+							],
+							"path": [
+								"dev",
+								"podcasts",
+								"{{podcastId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Generate cover image upload URL",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1d19d845-5256-4f24-ab79-685eff24365c",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Body includes uploadUrl\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.uploadUrl).to.not.eql(null);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "https://{{apiId}}.execute-api.us-east-1.amazonaws.com/dev/podcasts/{{podcastId}}/coverimage",
+							"protocol": "https",
+							"host": [
+								"{{apiId}}",
+								"execute-api",
+								"us-east-1",
+								"amazonaws",
+								"com"
+							],
+							"path": [
+								"dev",
+								"podcasts",
+								"{{podcastId}}",
+								"coverimage"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Episodes",
+			"item": [
+				{
+					"name": "Get all episodes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "eb971b44-b87b-4239-8b87-21adbfff4782",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Body includes items array\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.items).to.be.an(\"array\");",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://{{apiId}}.execute-api.us-east-1.amazonaws.com/dev/podcasts/{{podcastId}}/episodes",
+							"protocol": "https",
+							"host": [
+								"{{apiId}}",
+								"execute-api",
+								"us-east-1",
+								"amazonaws",
+								"com"
+							],
+							"path": [
+								"dev",
+								"podcasts",
+								"{{podcastId}}",
+								"episodes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create episode",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "722ef2a8-2d74-4c9d-b7f4-506ef6858cd1",
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Body includes item\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var item = jsonData.item;",
+									"    pm.expect(item.podcastId).to.not.eql(null);",
+									"    pm.expect(item.episodeId).to.not.eql(null);",
+									"    pm.expect(item.createdAt).to.not.eql(null);",
+									"    pm.expect(item.name).to.not.eql(null);",
+									"    pm.expect(item.description).to.not.eql(null);",
+									"",
+									"    pm.environment.set(\"episodeId\", jsonData.item.episodeId);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"name\": \"Hello Podcast Episode 1\",\n\t\"description\": \"1st episode of our podcast\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{apiId}}.execute-api.us-east-1.amazonaws.com/dev/podcasts/{{podcastId}}/episodes",
+							"protocol": "https",
+							"host": [
+								"{{apiId}}",
+								"execute-api",
+								"us-east-1",
+								"amazonaws",
+								"com"
+							],
+							"path": [
+								"dev",
+								"podcasts",
+								"{{podcastId}}",
+								"episodes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update episode",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "9f76723b-22f6-45ac-86a1-6782464a9901",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"name\": \"Hello Podcast Episode 1 (Updated)\",\n\t\"description\": \"First episode of our podcast\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{apiId}}.execute-api.us-east-1.amazonaws.com/dev/podcasts/{{podcastId}}/episodes/{{episodeId}}",
+							"protocol": "https",
+							"host": [
+								"{{apiId}}",
+								"execute-api",
+								"us-east-1",
+								"amazonaws",
+								"com"
+							],
+							"path": [
+								"dev",
+								"podcasts",
+								"{{podcastId}}",
+								"episodes",
+								"{{episodeId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Generate audio upload URL",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1a24a06f-7ffb-4ce1-8269-f09266d70a94",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Body includes uploadUrl\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.uploadUrl).to.not.eql(null);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "https://{{apiId}}.execute-api.us-east-1.amazonaws.com/dev/podcasts/{{podcastId}}/episode/{{episodeId}}/audio",
+							"protocol": "https",
+							"host": [
+								"{{apiId}}",
+								"execute-api",
+								"us-east-1",
+								"amazonaws",
+								"com"
+							],
+							"path": [
+								"dev",
+								"podcasts",
+								"{{podcastId}}",
+								"episode",
+								"{{episodeId}}",
+								"audio"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Cleanup",
+			"item": [
+				{
+					"name": "Delete episode",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "29fd5f9d-b8e8-4d4d-a9f2-388a12080392",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "https://{{apiId}}.execute-api.us-east-1.amazonaws.com/dev/podcasts/{{podcastId}}/episodes/{{episodeId}}",
+							"protocol": "https",
+							"host": [
+								"{{apiId}}",
+								"execute-api",
+								"us-east-1",
+								"amazonaws",
+								"com"
+							],
+							"path": [
+								"dev",
+								"podcasts",
+								"{{podcastId}}",
+								"episodes",
+								"{{episodeId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete podcast",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "12e0e47a-cef5-4317-9bc8-042955ae14fb",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "https://{{apiId}}.execute-api.us-east-1.amazonaws.com/dev/podcasts/{{podcastId}}",
+							"protocol": "https",
+							"host": [
+								"{{apiId}}",
+								"execute-api",
+								"us-east-1",
+								"amazonaws",
+								"com"
+							],
+							"path": [
+								"dev",
+								"podcasts",
+								"{{podcastId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "626c3a5c-c58b-4470-9217-e0c4743de38c",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "ff670770-e42c-43f6-9623-d3b94b910c79",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"id": "5fddfb13-5811-452a-9306-9452c7dbf127",
+			"key": "apiId",
+			"value": "06u8jp42ni",
+			"type": "string"
+		},
+		{
+			"id": "292bc0bd-42f7-41a4-8a34-32520c35195f",
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"id": "4d4aae5c-47f3-43f5-a160-624021db9912",
+			"key": "podcastId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"id": "791e09e5-f99c-4270-b78e-932ab434b120",
+			"key": "episodeId",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"protocolProfileBehavior": {}
+}
