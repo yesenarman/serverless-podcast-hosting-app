@@ -7,10 +7,14 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "source-map-support": "^0.5.19"
+    "axios": "^0.19.2",
+    "jsonwebtoken": "^8.5.1",
+    "source-map-support": "^0.5.19",
+    "winston": "^3.2.1"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.53",
+    "@types/jsonwebtoken": "^8.5.0",
     "@types/node": "^12.12.44",
     "cache-loader": "^4.1.0",
     "eslint": "^7.2.0",

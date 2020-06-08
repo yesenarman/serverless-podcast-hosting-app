@@ -16,11 +16,17 @@ provider:
     minimumCompressionSize: 1024 # Enable gzip compression for responses > 1 KB
   environment:
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+    JWKS_URL: https://dev-rjulv14u.auth0.com/.well-known/jwks.json
 
 functions:
+  Auth:
+    handler: src/lambda/auth/auth0Authorizer.handler
+
   hello:
     handler: handler.hello
     events:
       - http:
           method: get
           path: hello
+          cors: true
+          authorizer: Auth
