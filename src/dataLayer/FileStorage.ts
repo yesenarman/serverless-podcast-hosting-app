@@ -1,12 +1,12 @@
 import { S3 } from "aws-sdk";
 import { createLogger } from "../utils/logger";
 
-const logger = createLogger("ImageStorage");
+const logger = createLogger("FileStorage");
 
-export class ImageStorage {
+export class FileStorage {
   constructor(
     private readonly s3: S3,
-    private readonly imagesBucket = process.env.IMAGES_S3_BUCKET || "",
+    private readonly bucket: string,
     private readonly uploadUrlExpiration = parseInt(
       process.env.UPLOAD_URL_EXPIRATION || "0"
     ),
@@ -15,16 +15,16 @@ export class ImageStorage {
     )
   ) {}
 
-  async fileExists(podcastId: string): Promise<boolean> {
+  async fileExists(fileId: string): Promise<boolean> {
     try {
       logger.info("Checking if file exists", {
-        Bucket: this.imagesBucket,
-        Key: podcastId,
+        Bucket: this.bucket,
+        Key: fileId,
       });
       const head = await this.s3
         .headObject({
-          Bucket: this.imagesBucket,
-          Key: podcastId,
+          Bucket: this.bucket,
+          Key: fileId,
         })
         .promise();
       logger.info("Head object result", { head });
@@ -35,18 +35,18 @@ export class ImageStorage {
     }
   }
 
-  getUploadUrl(podcastId: string) {
+  getUploadUrl(fileId: string) {
     return this.s3.getSignedUrl("putObject", {
-      Bucket: this.imagesBucket,
-      Key: podcastId,
+      Bucket: this.bucket,
+      Key: fileId,
       Expires: this.uploadUrlExpiration,
     });
   }
 
-  getDownloadUrl(podcastId: string) {
+  getDownloadUrl(fileId: string) {
     return this.s3.getSignedUrl("getObject", {
-      Bucket: this.imagesBucket,
-      Key: podcastId,
+      Bucket: this.bucket,
+      Key: fileId,
       Expires: this.downloadUrlExpiration,
     });
   }

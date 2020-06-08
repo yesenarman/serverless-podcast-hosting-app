@@ -27,6 +27,7 @@ provider:
     EPISODES_TABLE: Episodes-${self:provider.stage}
     EPISODE_CREATED_AT_INDEX: EpisodeCreatedAtIndex
     IMAGES_S3_BUCKET: podcast-hosting-app-images-arman-${self:provider.stage}
+    AUDIOS_S3_BUCKET: podcast-hosting-app-audios-arman-${self:provider.stage}
     UPLOAD_URL_EXPIRATION: 300
     DOWNLOAD_URL_EXPIRATION: 604800
 
@@ -163,6 +164,11 @@ functions:
         Action:
           - dynamodb:Query
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EPISODES_TABLE}/index/${self:provider.environment.EPISODE_CREATED_AT_INDEX}
+      - Effect: Allow
+        Action:
+          - s3:HeadObject
+          - s3:GetObject
+        Resource: arn:aws:s3:::${self:provider.environment.AUDIOS_S3_BUCKET}/*
 
   CreateEpisode:
     handler: src/lambda/http/createEpisode.handler
@@ -227,6 +233,30 @@ functions:
         Action:
           - dynamodb:DeleteItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EPISODES_TABLE}
+
+  GenerateAudioUploadUrl:
+    handler: src/lambda/http/generateAudioUploadUrl.handler
+    events:
+      - http:
+          method: post
+          path: podcasts/{podcastId}/episode/{episodeId}/audio
+          cors: true
+          authorizer: Auth
+    iamRoleStatementsName: audioUpload
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PODCASTS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EPISODES_TABLE}
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+        Resource: arn:aws:s3:::${self:provider.environment.AUDIOS_S3_BUCKET}/*
 
 resources:
   Resources:
@@ -305,6 +335,24 @@ resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: ${self:provider.environment.IMAGES_S3_BUCKET}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedOrigins:
+                - "*"
+              AllowedHeaders:
+                - "*"
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              MaxAge: 3000
+
+    AudiosS3Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.AUDIOS_S3_BUCKET}
         CorsConfiguration:
           CorsRules:
             - AllowedOrigins:
